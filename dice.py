@@ -98,22 +98,61 @@ def shooting_phase(attacker, defender):
     #print(damage)
     return(damage)
 
+def prob_ranged_death(attacker, defender):
+    trials = 100000
+    wounds = defender['W']
+    dmg_dict = {}
+    results = {}
+
+    for n in range(0, wounds + 1):
+        dmg_dict[n] = 0
+    for x in range(trials):
+        damage = shooting_phase(attacker, defender)
+        if damage < wounds:
+            dmg_dict[damage] += 1
+        else:
+            dmg_dict[wounds] += 1
+
+    for n in range(0, wounds + 1):
+        results[n] = round(dmg_dict[n] /trials * 100, 2)
+
+    print(results)
+    #print(dmg_dict)
+    return(results)
+
+
+
+
+
+
 guardsmen1 = {'M':6 , 'APL':2, 'GA':2, 'BA':4, 'WA':3, 'BS':4, 'WS':4, 'BD':2, 'BCD':3, 'WD':2, 'WCD':3, 'DF':3, 'SV':5, 'W':7}
 guardsmen2 = {'M':6 , 'APL':2, 'GA':2, 'BA':4, 'WA':3, 'BS':4, 'WS':4, 'BD':2, 'BCD':3, 'WD':2, 'WCD':3, 'DF':3, 'SV':5, 'W':7}
 
 
 
-trials = 100000
+data = prob_ranged_death(guardsmen1, guardsmen2)
+
+
+
+x = list(data.keys())
+y = list(data.values())
+
+# plot
+fig, ax = plt.subplots()
+
+ax.bar(x, y, width=1, edgecolor="white", linewidth=0.7)
+
+plt.show()
+
+'''
+trials = 10
 
 damage = bytearray(trials)
 
 for x in range(trials):
     damage[x] = shooting_phase(guardsmen1, guardsmen2)
 
-
- 
-
 plt.hist(damage, histtype='stepfilled')
 plt.show() 
 
-
+'''
