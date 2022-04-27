@@ -2,7 +2,7 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 
-def dice_check(rolls, skill): #roll is number of D6 dice rolled   dice equal to of greater than skill show as hits.   6's are crits
+def dice_check(rolls, skill, reroll = 0, crit_fish = 0): #roll is number of D6 dice rolled   dice equal to of greater than skill show as hits.   6's are crits
     #print('Rolls:', end='')
     #print(rolls)
     #print('Skill:', end='')
@@ -25,13 +25,36 @@ def dice_check(rolls, skill): #roll is number of D6 dice rolled   dice equal to 
         results[single_roll] += 1
         if single_roll >= skill:
             results['Hits'] += 1
+    
+    if reroll != 0 and crit_fish == 0:
+        to_reroll = 0 
+        for n in range(1, reroll + 1):
+            to_reroll += results[n]
+            results[n] = 0
+        for n in range(to_reroll):
+            single_roll = random.randint(1,6) #D6 dice
+            dice_rolls[n] = single_roll
+            results[single_roll] += 1
+            if single_roll >= skill:
+                results['Hits'] += 1
+
+
+    if crit_fish == 1 and reroll == 0:
+        for n in range(1,6):
+            results[n] = 0
+        for n in range(rolls - results[6]):
+            single_roll = random.randint(1,6) #D6 dice
+            dice_rolls[n] = single_roll
+            results[single_roll] += 1
+            if single_roll >= skill:
+                results['Hits'] += 1
 
     results['Crits'] = results[6]
     results['Hit %'] = results['Hits'] / results['Rolls']
     results['Crit %'] = results['Crits'] / results['Rolls'] 
 
     #print(dice_rolls)    
-    #print(results)
+    print(results)
     return(results)
 
 def get_attacks():
@@ -98,8 +121,10 @@ def shooting_phase(attacker, defender):
     #print(damage)
     return(damage)
 
-def prob_ranged_death(attacker, defender):
-    trials = 100000
+def prob_ranged_death(attacker, defender, trials = 10000):
+    if trials <= 0:
+        print("invalid trials number")
+        return
     wounds = defender['W']
     dmg_dict = {}
     results = {}
@@ -126,11 +151,11 @@ def prob_ranged_death(attacker, defender):
 
 
 guardsmen1 = {'M':6 , 'APL':2, 'GA':2, 'BA':4, 'WA':3, 'BS':4, 'WS':4, 'BD':2, 'BCD':3, 'WD':2, 'WCD':3, 'DF':3, 'SV':5, 'W':7}
-guardsmen2 = {'M':6 , 'APL':2, 'GA':2, 'BA':4, 'WA':3, 'BS':4, 'WS':4, 'BD':2, 'BCD':3, 'WD':2, 'WCD':3, 'DF':3, 'SV':5, 'W':7}
+kommando = {'M':6 , 'APL':2, 'GA':1, 'BA':5, 'WA':3, 'BS':4, 'WS':3, 'BD':3, 'BCD':4, 'WD':3, 'WCD':4, 'DF':3, 'SV':5, 'W':10}
 
+#dice_check(100000,4)
 
-
-data = prob_ranged_death(guardsmen1, guardsmen2)
+data = prob_ranged_death(kommando, guardsmen1)
 
 
 
@@ -150,7 +175,7 @@ trials = 10
 damage = bytearray(trials)
 
 for x in range(trials):
-    damage[x] = shooting_phase(guardsmen1, guardsmen2)
+    damage[x] = shooting_phase(guardsmen1, kommando)
 
 plt.hist(damage, histtype='stepfilled')
 plt.show() 
