@@ -1,6 +1,10 @@
 import random
 
-def attack_check(rolls, skill):
+def dice_check(rolls, skill):
+    print('Rolls:', end='')
+    print(rolls)
+    print('Skill:', end='')
+    print(skill)
     rolls = int(rolls)
     if rolls <= 0 or skill < 1 or skill > 6:
         print('Invalid Range')
@@ -21,7 +25,8 @@ def attack_check(rolls, skill):
     results['Crit %'] = results['Crits'] / results['Rolls'] 
 
     #print(dice_rolls)    
-    print(results)
+    #print(results)
+    return(results)
 
 def get_attacks():
     print("Attack Dice:", end='')
@@ -33,4 +38,56 @@ def get_attacks():
     print(atk_num,def_num)
     return(atk_num,def_num)
 
-attack_check(10, 4) #number of rolls, BS/WS level
+def shooting_phase(attacker, defender):
+    print(attacker)
+    print(defender)
+
+    attack_dice = dice_check(attacker['BA'], attacker['BS'])
+    defense_dice = dice_check(defender['DF'], defender['SV'])
+    
+    print(attack_dice)
+    print(defense_dice)
+
+    if attack_dice['Crits'] != 0 and defense_dice['Crits'] != 0:
+        if attack_dice['Crits'] >= defense_dice['Crits']:
+            attack_dice['Crits'] -= defense_dice['Crits']
+            defense_dice['Crits'] = 0
+        elif attack_dice['Crits'] < defense_dice['Crits']:
+            defense_dice['Crits'] -= attack_dice['Crits']
+            attack_dice['Crits'] = 0
+    print(attack_dice['Crits'],defense_dice['Crits'])
+    
+    if attack_dice['Hits'] != 0 and defense_dice['Hits'] != 0:
+        if attack_dice['Hits'] >= defense_dice['Hits']:
+            attack_dice['Hits'] -= defense_dice['Hits']
+            defense_dice['Hits'] = 0
+        elif attack_dice['Hits'] < defense_dice['Hits']:
+            defense_dice['Hits'] -= attack_dice['Hits']
+            attack_dice['Hits'] = 0
+    print(attack_dice['Hits'],defense_dice['Hits'])
+
+    if attack_dice['Hits'] != 0 and defense_dice['Crits'] != 0:
+        if attack_dice['Hits'] >= defense_dice['Crits']:
+            attack_dice['Hits'] -= defense_dice['Crits']
+            defense_dice['Crits'] = 0
+        elif attack_dice['Hits'] < defense_dice['Crits']:
+            defense_dice['Crits'] -= attack_dice['Hits']
+            attack_dice['Hits'] = 0
+    
+    if attack_dice['Crits'] != 0 and defense_dice['Hits'] != 0:
+        if (attack_dice['Crits'] * 2) >= defense_dice['Hits']:
+            attack_dice['Crits'] -= defense_dice['Hits'] // 2
+            defense_dice['Hits'] = 0 #not perfect  doesn't carry remainder
+        elif (attack_dice['Crits'] * 2) < defense_dice['Hits']:
+            defense_dice['Hits'] -= attack_dice['Crits'] * 2
+            attack_dice['Crits'] = 0
+    print(attack_dice['Crits'],attack_dice['Hits'])
+    print(defense_dice['Crits'], defense_dice['Hits'])
+
+    damage = attack_dice['Crits'] * attacker['BCD'] + attack_dice['Hits'] * attacker['BD']
+
+    print(damage)
+
+guardsmen1 = {'M':6 , 'APL':2, 'GA':2, 'BA':4, 'WA':3, 'BS':4, 'WS':4, 'BD':2, 'BCD':3, 'WD':2, 'WCD':3, 'DF':3, 'SV':5, 'W':7}
+guardsmen2 = {'M':6 , 'APL':2, 'GA':2, 'BA':4, 'WA':3, 'BS':4, 'WS':4, 'BD':2, 'BCD':3, 'WD':2, 'WCD':3, 'DF':3, 'SV':5, 'W':7}
+shooting_phase(guardsmen1, guardsmen2)
