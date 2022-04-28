@@ -122,8 +122,6 @@ def shooting_phase(attacker, defender):
     return(damage)
 
 def melee_phase(attacker, defender):
-    attacker_wounds = attacker['W']
-    defender_wounds = defender['W']
     
     attack_dice = dice_check(attacker['WA'], attacker['WS'])
     defense_dice = dice_check(defender['WA'], defender['WS'])
@@ -136,88 +134,104 @@ def melee_phase(attacker, defender):
 
 
     if dice_dif >= 0:
-        iterations = attacker_total_dice - abs(dice_dif)
+        iterations_x = attacker_total_dice - abs(dice_dif)
     else:
-        iterations = defender_total_dice - abs(dice_dif)
+        iterations_x = defender_total_dice - abs(dice_dif)
+    
+    if iterations_x > 0:
+        iterations_y = iterations_x - 1
+    else:
+        iterations_y = 0
 
-    print('it')
-    print(iterations)
+    print('iteration')
+    print(iterations_x)
 
     damage_totals ={}
 
     
     damage_pos_counter = 0
 
-    for x in range(2**iterations):
-        for y in range(2**(iterations-int(1))):
+    for x in range(2**iterations_x):
+        for y in range(2**iterations_y):
             print(x,y)
+
             #reset stats for another calculation
             attack_dmg = 0
             defense_dmg = 0
-            attacker_total_dice = attack_dice['Hits'] + attack_dice['Crits']
+            
             attacker_hits = attack_dice['Hits']
             attacker_crits = attack_dice['Crits']
-            defender_total_dice = defense_dice['Hits'] + defense_dice['Crits']
+            attacker_total_dice = attacker_hits + attacker_crits
+            
             defender_hits = defense_dice['Hits']
             defender_crits = defense_dice['Crits']
+            defender_total_dice = defender_hits + defender_crits
+
+            attacker_wounds = attacker['W']
+            defender_wounds = defender['W']
+
             mask = 1
             
             print(attack_dmg,defense_dmg,attacker_hits,attacker_crits,defender_hits,defender_crits)
 
-            while attacker_hits !=0 and defender_hits !=0: #only need to do checks when both players have dice left
-                
+            while attacker_total_dice !=0 and defender_total_dice !=0: #only need to do checks when both players have dice left
                 #attacker turn
-                if attacker_crits != 0:
-                    if (x & mask) == 0: #0 is a parry
-                        if defender_crits != 0:
-                            defender_crits -= 1
-                            attacker_crits -= 1
-                        else:
-                            defender_hits -= 1
-                            attacker_crits -= 1
-                    else:
-                        attack_dmg += attacker['WCD']
-                        attacker_crits -= 1
-                elif attacker_hits != 0:
-                    if (x & mask) == 0: #0 is a parry
-                        if defender_hits != 0:
-                            defender_hits -= 1
-                            attacker_hits -= 1
-                        else:
-                            attack_dmg += attacker['WD']
-                            attacker_hits -= 1
-                    else:
-                        attack_dmg += attacker['WD']
-                        attacker_hits -= 1
+
+                #is attacker dead
+                if defense_dmg >= attacker_wounds:
+                    print('attacker dead')
+                    attacker_hits = 0
+                    attacker_crits = 0
+                
+                #pick action
+                if attacker_crits != 0 and defender_crits !=0 and (x & mask) == 0: #parry
+                    defender_crits -= 1
+                    attacker_crits -= 1
+                elif attacker_hits != 0 and defender_hits !=0 and (x & mask) == 0: #parry
+                    defender_hits -= 1
+                    attacker_hits -= 1
+                elif attacker_crits != 0: #attack
+                    attack_dmg += attacker['WCD']
+                    attacker_crits -= 1
+                elif attacker_hits != 0: #attack
+                    attack_dmg += attacker['WD']
+                    attacker_hits -= 1   
+                else:
+                    pass
+
 
                 print(attack_dmg,defense_dmg,attacker_hits,attacker_crits,defender_hits,defender_crits)
                 
                 #defender turn
-                if defender_crits != 0:
-                    if (y & mask) == 0: #0 is a parry
-                        if attacker_crits != 0:
-                            attacker_crits -= 1
-                            defender_crits -= 1
-                        else:
-                            attacker_hits -= 1
-                            defender_crits -= 1
-                    else:
-                        defense_dmg += defender['WCD']
-                        defender_crits -= 1
-                elif defender_hits != 0:
-                    if (y & mask) == 0: #0 is a parry
-                        if attacker_hits != 0:
-                            attacker_hits -= 1
-                            defender_hits -= 1
-                        else:
-                            defense_dmg += defender['WD']
-                            defender_hits -= 1
-                    else:
-                        defense_dmg += defender['WD']
-                        defender_hits -= 1
-                    print(attack_dmg,defense_dmg,attacker_hits,attacker_crits,defender_hits,defender_crits)
+
+                #is defender dead
+                if attack_dmg >= defender_wounds:
+                    print('defender dead')
+                    defender_hits = 0
+                    defender_crits = 0
+                
+                #pick action
+                if defender_crits != 0 and attacker_crits !=0 and (y & mask) == 0: #parry
+                    defender_crits -= 1
+                    attacker_crits -= 1
+                elif defender_hits != 0 and attacker_hits !=0 and (y & mask) == 0: #parry
+                    defender_hits -= 1
+                    attacker_hits -= 1
+                elif defender_crits != 0: #attack
+                    defense_dmg += defender['WCD']
+                    defender_crits -= 1
+                elif defender_hits != 0: #attack
+                    defense_dmg += defender['WD']
+                    defender_hits -= 1  
+                else:
+                    pass
+
+                print(attack_dmg,defense_dmg,attacker_hits,attacker_crits,defender_hits,defender_crits)
                     
-                    mask = mask * 2
+                #update leftover dice totals and move resolution round mask for bitwise compare
+                attacker_total_dice = attacker_hits + attacker_crits
+                defender_total_dice = defender_hits + defender_crits
+                mask = mask * 2
 
                 
 
@@ -226,13 +240,26 @@ def melee_phase(attacker, defender):
             #add up leftover dice
             attack_dmg += (attacker_hits * attacker['WD'])
             attack_dmg += (attacker_crits * attacker['WCD'])
+            attacker_hits = 0
+            attacker_crits = 0
             defense_dmg += (defender_hits * defender['WD'])
             defense_dmg += (defender_crits * defender['WCD'])
+            defender_hits = 0
+            defender_crits = 0
             damage_totals[damage_pos_counter] = (attack_dmg,defense_dmg)
             damage_pos_counter += 1
             print(attack_dmg,defense_dmg,attacker_hits,attacker_crits,defender_hits,defender_crits)
 
     print(damage_totals)
+
+    # Remove duplicate values in dictionary
+    # Using dictionary comprehension
+    temp = {val : key for key, val in damage_totals.items()}
+    res = {val : key for key, val in temp.items()}
+    
+    # printing result 
+    print()
+    print(str(res)) 
 
 
 
@@ -273,7 +300,7 @@ def prob_ranged_death(attacker, defender, trials = 10000):
 
 
 guardsmen1 = {'M':6 , 'APL':2, 'GA':2, 'BA':4, 'WA':3, 'BS':4, 'WS':4, 'BD':2, 'BCD':3, 'WD':2, 'WCD':3, 'DF':3, 'SV':5, 'W':7}
-kommando = {'M':6 , 'APL':2, 'GA':1, 'BA':5, 'WA':3, 'BS':4, 'WS':3, 'BD':3, 'BCD':4, 'WD':2, 'WCD':3, 'DF':3, 'SV':5, 'W':10}
+kommando = {'M':6 , 'APL':2, 'GA':1, 'BA':5, 'WA':3, 'BS':4, 'WS':3, 'BD':3, 'BCD':4, 'WD':3, 'WCD':4, 'DF':3, 'SV':5, 'W':10}
 
 #dice_check(100000,4)
 
