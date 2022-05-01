@@ -1,8 +1,13 @@
 
+from multiprocessing.sharedctypes import Value
+from optparse import Values
 import random
+from re import S
 from secrets import choice
+from tkinter import font
 import numpy as np
 import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 8})
 
 def dice_check(rolls, skill, reroll = 0, crit_fish = 0): #roll is number of D6 dice rolled   dice equal to of greater than skill show as hits.   6's are crits
     #print('Rolls:', end='')
@@ -56,7 +61,7 @@ def dice_check(rolls, skill, reroll = 0, crit_fish = 0): #roll is number of D6 d
     results['Crit %'] = results['Crits'] / results['Rolls'] 
 
     #print(dice_rolls)    
-    print(results)
+    #print(results)
     return(results)
 
 
@@ -266,7 +271,7 @@ def melee_phase_brute_force_try(attacker, defender):
     print()
     print(str(res)) 
 
-#not working
+
 def melee_phase_algo1(attacker, defender):
 
     def zero_dice():
@@ -400,7 +405,8 @@ def melee_phase_algo1(attacker, defender):
     
 
     #preface Atk Crits Atk Hits Atk Dmg Def Crits Def Hits Def Dmg
-    damage_sequence = [-1] * (status['atd'] + status['dtd']+ 6)
+    #usually is larger than needed but make up for cases one when side need to run out dice and other just passes
+    damage_sequence = [-1] * ((status['atd'] + status['dtd'])*2 + 6)
     max_sequence_length = len(damage_sequence) - 6
     
     damage_sequence[0] = status['ac']
@@ -413,176 +419,210 @@ def melee_phase_algo1(attacker, defender):
     event_totals = []
     round = 1
     event_counter = 0
-
-   
+    
+   # 
+   #add stop if other player doesnt have any dice
+   #
+   #
     
     branch_options = possible_choices(damage_sequence, 'attacker')
-    for x in range(branch_options['Iterations']):
-        event_totals.append(damage_sequence)
-        event_counter += 1
     
-    print(branch_options)
-    print(event_totals)
-    print()
+    if branch_options['Iterations'] == 0:
+        event_totals.append(damage_sequence)
+    else:
+        for x in range(branch_options['Iterations']):
+            event_totals.append(damage_sequence)
+            event_counter += 1
+    
+    #print(branch_options)
+    #print(event_totals)
+    #print()
 
     event_counter = 0
+    iter_dmg_seq = damage_sequence.copy()
     if branch_options['Crit_Parry'] == 1:
-        temp_dmg_seq = list(damage_sequence)
+        temp_dmg_seq = list(iter_dmg_seq)
         temp_dmg_seq[0] -= 1
         temp_dmg_seq[3] -= 1
         temp_dmg_seq[round + 5] = 9
         event_totals[event_counter] = temp_dmg_seq
         event_counter += 1
     if branch_options['Crit_Bad_Parry'] == 1:
-        temp_dmg_seq = list(damage_sequence)
+        temp_dmg_seq = list(iter_dmg_seq)
         temp_dmg_seq[0] -= 1
         temp_dmg_seq[4] -= 1
         temp_dmg_seq[round + 5] = 1
         event_totals[event_counter] = temp_dmg_seq
         event_counter += 1
     if branch_options['Parry'] == 1:
-        temp_dmg_seq = list(damage_sequence)
+        temp_dmg_seq = list(iter_dmg_seq)
         temp_dmg_seq[1] -= 1
         temp_dmg_seq[4] -= 1
         temp_dmg_seq[round + 5] = 7
         event_totals[event_counter] = temp_dmg_seq
         event_counter += 1
     if branch_options['Crit_Strike'] == 1:
-        temp_dmg_seq = list(damage_sequence)
+        temp_dmg_seq = list(iter_dmg_seq)
         temp_dmg_seq[0] -= 1
         temp_dmg_seq[2] += status['acd']
         temp_dmg_seq[round + 5] = 5
         event_totals[event_counter] = temp_dmg_seq
         event_counter += 1
     if branch_options['Strike'] == 1:
-        temp_dmg_seq = list(damage_sequence)
+        temp_dmg_seq = list(iter_dmg_seq)
         temp_dmg_seq[1] -= 1
-        temp_dmg_seq[2] += status['ad']
+        temp_dmg_seq[2] += status['ahd']
         temp_dmg_seq[round + 5] = 3
         event_totals[event_counter] = temp_dmg_seq
         event_counter += 1
 
-    print("round:",end='')
-    print(round)
-    print(event_totals)
+        
 
-    round += 1
-    print("round:",end='')
-    print(round)
+    #print(event_totals)
+    #print()
+
+    while event_totals[0][len(damage_sequence)-1] == -1:
+        round += 1
+        #print("*defender* round:",end='')
+        #print(round)
+        
+        counter_1 = 0
+        for x in range(len(event_totals)):
+            branch_options = possible_choices(event_totals[counter_1], 'defender')
+            #print(event_totals[counter_1])
+            #print(branch_options)
+            
+            
+            for x in range(branch_options['Iterations'] - 1):
+                event_totals.insert(counter_1, event_totals[counter_1])
+            
+            event_counter = counter_1
+            iter_dmg_seq = event_totals[counter_1].copy()
+            if branch_options['Crit_Parry'] == 1:
+                temp_dmg_seq = list(iter_dmg_seq)
+                temp_dmg_seq[0] -= 1
+                temp_dmg_seq[3] -= 1
+                temp_dmg_seq[round + 5] = 8
+                event_totals[event_counter] = temp_dmg_seq
+                event_counter += 1
+            if branch_options['Crit_Bad_Parry'] == 1:
+                temp_dmg_seq = list(iter_dmg_seq)
+                temp_dmg_seq[1] -= 1
+                temp_dmg_seq[3] -= 1
+                temp_dmg_seq[round + 5] = 0
+                event_totals[event_counter] = temp_dmg_seq
+                event_counter += 1
+            if branch_options['Parry'] == 1:
+                temp_dmg_seq = list(iter_dmg_seq)
+                temp_dmg_seq[1] -= 1
+                temp_dmg_seq[4] -= 1
+                temp_dmg_seq[round + 5] = 6
+                event_totals[event_counter] = temp_dmg_seq
+                event_counter += 1
+            if branch_options['Crit_Strike'] == 1:
+                temp_dmg_seq = list(iter_dmg_seq)
+                temp_dmg_seq[3] -= 1
+                temp_dmg_seq[5] += status['dcd']
+                temp_dmg_seq[round + 5] = 4
+                event_totals[event_counter] = temp_dmg_seq
+                event_counter += 1
+            if branch_options['Strike'] == 1:
+                temp_dmg_seq = list(iter_dmg_seq)
+                temp_dmg_seq[4] -= 1
+                temp_dmg_seq[5] += status['dhd']
+                temp_dmg_seq[round + 5] = 2
+                event_totals[event_counter] = temp_dmg_seq
+                event_counter += 1
 
 
-    counter_1 = 0
+            if branch_options['Iterations'] == 0:
+                temp_dmg_seq = list(iter_dmg_seq)
+                temp_dmg_seq[round + 5] = 0
+                event_totals[event_counter] = temp_dmg_seq
+                counter_1 += 1
+            counter_1 += branch_options['Iterations'] 
+            
+            #print()
+        
+        #print(event_totals)
+        #print()
+        
+        
+
+        if event_totals[0][len(damage_sequence)-1] == -1:
+            round += 1
+            #print("*attacker*  round:",end='')
+            #print(round)
+
+            counter_1 = 0
+            for x in range(len(event_totals)):
+                branch_options = possible_choices(event_totals[counter_1], 'attacker')
+                #print(event_totals[counter_1])
+                #print(branch_options)
+
+                for x in range(branch_options['Iterations'] - 1):
+                    event_totals.insert(counter_1, event_totals[counter_1])
+                
+                event_counter = counter_1
+                iter_dmg_seq = event_totals[counter_1].copy()
+                if branch_options['Crit_Parry'] == 1:
+                    temp_dmg_seq = list(iter_dmg_seq)
+                    temp_dmg_seq[0] -= 1
+                    temp_dmg_seq[3] -= 1
+                    temp_dmg_seq[round + 5] = 9
+                    event_totals[event_counter] = temp_dmg_seq
+                    event_counter += 1
+                if branch_options['Crit_Bad_Parry'] == 1:
+                    temp_dmg_seq = list(iter_dmg_seq)
+                    temp_dmg_seq[0] -= 1
+                    temp_dmg_seq[4] -= 1
+                    temp_dmg_seq[round + 5] = 1
+                    event_totals[event_counter] = temp_dmg_seq
+                    event_counter += 1
+                if branch_options['Parry'] == 1:
+                    temp_dmg_seq = list(iter_dmg_seq)
+                    temp_dmg_seq[1] -= 1
+                    temp_dmg_seq[4] -= 1
+                    temp_dmg_seq[round + 5] = 7
+                    event_totals[event_counter] = temp_dmg_seq
+                    event_counter += 1
+                if branch_options['Crit_Strike'] == 1:
+                    temp_dmg_seq = list(iter_dmg_seq)
+                    temp_dmg_seq[0] -= 1
+                    temp_dmg_seq[2] += status['acd']
+                    temp_dmg_seq[round + 5] = 5
+                    event_totals[event_counter] = temp_dmg_seq
+                    event_counter += 1
+                if branch_options['Strike'] == 1:
+                    temp_dmg_seq = list(iter_dmg_seq)
+                    temp_dmg_seq[1] -= 1
+                    temp_dmg_seq[2] += status['ahd']
+                    temp_dmg_seq[round + 5] = 3
+                    event_totals[event_counter] = temp_dmg_seq
+                    event_counter += 1
+
+                if branch_options['Iterations'] == 0:
+                    temp_dmg_seq = list(iter_dmg_seq)
+                    temp_dmg_seq[round + 5] = 0
+                    event_totals[event_counter] = temp_dmg_seq
+                    counter_1 += 1
+                counter_1 += branch_options['Iterations'] 
+
+            #print(event_totals)
+            #print()
+    #print(event_totals)
+    #print(len(event_totals))
+    just_dmg_totals = {}
     for x in range(len(event_totals)):
-        branch_options = possible_choices(event_totals[counter_1], 'defender')
-        
-        for x in range(branch_options['Iterations'] - 1):
-            event_totals.insert(counter_1, event_totals[counter_1])
-        
-        event_counter = counter_1
-        if branch_options['Crit_Parry'] == 1:
-            temp_dmg_seq = list(event_totals[counter_1])
-            temp_dmg_seq[0] -= 1
-            temp_dmg_seq[3] -= 1
-            temp_dmg_seq[round + 5] = 8
-            event_totals[event_counter] = temp_dmg_seq
-            event_counter += 1
-        if branch_options['Crit_Bad_Parry'] == 1:
-            temp_dmg_seq = list(event_totals[counter_1])
-            temp_dmg_seq[1] -= 1
-            temp_dmg_seq[3] -= 1
-            temp_dmg_seq[round + 5] = 0
-            event_totals[event_counter] = temp_dmg_seq
-            event_counter += 1
-        if branch_options['Parry'] == 1:
-            temp_dmg_seq = list(event_totals[counter_1])
-            temp_dmg_seq[1] -= 1
-            temp_dmg_seq[4] -= 1
-            temp_dmg_seq[round + 5] = 6
-            event_totals[event_counter] = temp_dmg_seq
-            event_counter += 1
-        if branch_options['Crit_Strike'] == 1:
-            temp_dmg_seq = list(event_totals[counter_1])
-            temp_dmg_seq[3] -= 1
-            temp_dmg_seq[5] += status['dcd']
-            temp_dmg_seq[round + 5] = 4
-            event_totals[event_counter] = temp_dmg_seq
-            event_counter += 1
-        if branch_options['Strike'] == 1:
-            temp_dmg_seq = list(event_totals[counter_1])
-            temp_dmg_seq[4] -= 1
-            temp_dmg_seq[5] += status['dd']
-            temp_dmg_seq[round + 5] = 2
-            event_totals[event_counter] = temp_dmg_seq
-            event_counter += 1
+        just_dmg_totals[x] = (event_totals[x][2], event_totals[x][5])
 
-        if branch_options['Iterations'] == 0:
-            temp_dmg_seq = list(event_totals[counter_1])
-            temp_dmg_seq[round + 5] = 0
-            event_totals[event_counter] = temp_dmg_seq
-            counter_1 += 1
-        counter_1 += branch_options['Iterations'] 
-        
-    print(event_totals)
-    print()
+    temp = {val : key for key, val in just_dmg_totals.items()}
+    res = {val : key for key, val in temp.items()}
     
-    round += 1
-    print("round:",end='')
-    print(round)
-
-
-    counter_1 = 0
-    for x in range(len(event_totals)):
-        branch_options = possible_choices(event_totals[counter_1], 'attacker')
-        for x in range(branch_options['Iterations'] - 1):
-            event_totals.insert(counter_1, event_totals[counter_1])
-        
-        event_counter = counter_1
-        if branch_options['Crit_Parry'] == 1:
-            temp_dmg_seq = list(event_totals[counter_1])
-            temp_dmg_seq[0] -= 1
-            temp_dmg_seq[3] -= 1
-            temp_dmg_seq[round + 5] = 8
-            event_totals[event_counter] = temp_dmg_seq
-            event_counter += 1
-        if branch_options['Crit_Bad_Parry'] == 1:
-            temp_dmg_seq = list(event_totals[counter_1])
-            temp_dmg_seq[0] -= 1
-            temp_dmg_seq[4] -= 1
-            temp_dmg_seq[round + 5] = 0
-            event_totals[event_counter] = temp_dmg_seq
-            event_counter += 1
-        if branch_options['Parry'] == 1:
-            temp_dmg_seq = list(event_totals[counter_1])
-            temp_dmg_seq[1] -= 1
-            temp_dmg_seq[4] -= 1
-            temp_dmg_seq[round + 5] = 6
-            event_totals[event_counter] = temp_dmg_seq
-            event_counter += 1
-        if branch_options['Crit_Strike'] == 1:
-            temp_dmg_seq = list(event_totals[counter_1])
-            temp_dmg_seq[0] -= 1
-            temp_dmg_seq[2] += status['acd']
-            temp_dmg_seq[round + 5] = 4
-            event_totals[event_counter] = temp_dmg_seq
-            event_counter += 1
-        if branch_options['Strike'] == 1:
-            temp_dmg_seq = list(event_totals[counter_1])
-            temp_dmg_seq[1] -= 1
-            temp_dmg_seq[2] += status['ad']
-            temp_dmg_seq[round + 5] = 2
-            event_totals[event_counter] = temp_dmg_seq
-            event_counter += 1
-
-        if branch_options['Iterations'] == 0:
-            temp_dmg_seq = list(event_totals[counter_1])
-            temp_dmg_seq[round + 5] = 0
-            event_totals[event_counter] = temp_dmg_seq
-            counter_1 += 1
-        counter_1 += branch_options['Iterations'] 
-        
-    print(event_totals)
-    print()
-
+    # printing result 
+    #print()
+    #print(str(res)) 
+    return(res)
 
     
     '''
@@ -864,12 +904,46 @@ def prob_ranged_death(attacker, defender, trials = 10000):
 
 
 guardsmen1 = {'M':6 , 'APL':2, 'GA':2, 'BA':4, 'WA':3, 'BS':4, 'WS':4, 'BD':2, 'BCD':3, 'WD':2, 'WCD':3, 'DF':3, 'SV':5, 'W':7}
-kommando = {'M':6 , 'APL':2, 'GA':1, 'BA':5, 'WA':3, 'BS':4, 'WS':3, 'BD':3, 'BCD':4, 'WD':2, 'WCD':3, 'DF':3, 'SV':5, 'W':10}
+kommando = {'M':6 , 'APL':2, 'GA':1, 'BA':5, 'WA':3, 'BS':4, 'WS':3, 'BD':3, 'BCD':4, 'WD':3, 'WCD':4, 'DF':3, 'SV':5, 'W':10}
 
 #dice_check(100000,4)
 
 #melee_phase_user_picks(kommando, guardsmen1)
-melee_phase_algo1(kommando, guardsmen1)
+
+outcome_tally = {}
+entry = ''
+for x in range(1000):
+    raw_data = melee_phase_algo1(kommando, guardsmen1)
+    for x in list(raw_data.keys()):
+        entry = str(raw_data[x]).replace('(','')
+        entry = entry.replace(')','')
+        if entry in outcome_tally:
+            outcome_tally[entry] += 1
+        else:
+            outcome_tally[entry] = 1
+
+
+#print(outcome_tally)
+
+
+#data = dict(sorted(outcome_tally.items()))
+data = outcome_tally
+
+data_sorted = {k: v for k, v in sorted(data.items(), key=lambda x: x[1])}
+
+
+
+x = list(data_sorted.keys())
+y = list(data_sorted.values())
+
+# plot
+fig, ax = plt.subplots()
+
+ax.bar(x, y, width=1, edgecolor="white", linewidth=3)
+
+plt.show()
+
+
 
 '''
 data = prob_ranged_death(kommando, guardsmen1)
