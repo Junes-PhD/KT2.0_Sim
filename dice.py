@@ -1,4 +1,5 @@
 
+from filecmp import clear_cache
 from multiprocessing.sharedctypes import Value
 from optparse import Values
 import random
@@ -9,8 +10,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 plt.rcParams.update({'font.size': 8})
 
-def dice_check(rolls, skill, reroll = 0, crit_fish = 0): #roll is number of D6 dice rolled   dice equal to of greater than skill show as hits.   6's are crits
-    #print('Rolls:', end='')
+
+#roll is number of D6 dice rolled   dice equal to of greater than skill show as hits.   6's are crits
+def dice_check(rolls, skill, reroll = 0, crit_fish = 0): 
     #print(rolls)
     #print('Skill:', end='')
     #print(skill)
@@ -64,7 +66,7 @@ def dice_check(rolls, skill, reroll = 0, crit_fish = 0): #roll is number of D6 d
     #print(results)
     return(results)
 
-
+#user input example 
 def get_attacks():
     print("Attack Dice:", end='')
     atk_num = input()
@@ -75,7 +77,7 @@ def get_attacks():
     print(atk_num,def_num)
     return(atk_num,def_num)
 
-
+#Calculate one round of shooting
 def shooting_phase(attacker, defender):
     #print(attacker)
     #print(defender)
@@ -272,7 +274,8 @@ def melee_phase_brute_force_try(attacker, defender):
     print(str(res)) 
 
 
-def melee_phase_algo1(attacker, defender):
+#Calculates all possible outcomes
+def melee_phase_all_outcomes(attacker, defender):
 
     def zero_dice():
         print('zero dice')
@@ -378,6 +381,9 @@ def melee_phase_algo1(attacker, defender):
     attack_dice = dice_check(attacker['WA'], attacker['WS'])
     defense_dice = dice_check(defender['WA'], defender['WS'])
 
+    print(attack_dice)
+    print(defense_dice)
+
     #load stats
     status = {}
     status['ah'] = attack_dice['Hits']
@@ -399,9 +405,6 @@ def melee_phase_algo1(attacker, defender):
     #tally of each simulation
     event_totals = []
    
-
- 
-
     
 
     #preface Atk Crits Atk Hits Atk Dmg Def Crits Def Hits Def Dmg
@@ -437,7 +440,17 @@ def melee_phase_algo1(attacker, defender):
     #print(branch_options)
     #print(event_totals)
     #print()
+    '''
+    Odd Attacker Even Defeneder except 1 is both because ran out of digits
 
+    9,8 Crit Parry
+    7,6 Pary
+    5,4 Crit Strike
+    3,2 Strike
+    1,0  Crit Parry Normal Hit
+    -1 Filler
+    -2 No Action
+    '''
     event_counter = 0
     iter_dmg_seq = damage_sequence.copy()
     if branch_options['Crit_Parry'] == 1:
@@ -537,7 +550,7 @@ def melee_phase_algo1(attacker, defender):
 
             if branch_options['Iterations'] == 0:
                 temp_dmg_seq = list(iter_dmg_seq)
-                temp_dmg_seq[round + 5] = 0
+                temp_dmg_seq[round + 5] = -2
                 event_totals[event_counter] = temp_dmg_seq
                 counter_1 += 1
             counter_1 += branch_options['Iterations'] 
@@ -603,15 +616,20 @@ def melee_phase_algo1(attacker, defender):
 
                 if branch_options['Iterations'] == 0:
                     temp_dmg_seq = list(iter_dmg_seq)
-                    temp_dmg_seq[round + 5] = 0
+                    temp_dmg_seq[round + 5] = -2
                     event_totals[event_counter] = temp_dmg_seq
                     counter_1 += 1
                 counter_1 += branch_options['Iterations'] 
 
             #print(event_totals)
             #print()
-    #print(event_totals)
+
+    #print(status)        
+    #print()
     #print(len(event_totals))
+    #print()
+    #print(event_totals)
+
     just_dmg_totals = {}
     for x in range(len(event_totals)):
         just_dmg_totals[x] = (event_totals[x][2], event_totals[x][5])
@@ -622,7 +640,7 @@ def melee_phase_algo1(attacker, defender):
     # printing result 
     #print()
     #print(str(res)) 
-    return(res)
+    return(status, res, event_totals)
 
     
     '''
@@ -640,7 +658,7 @@ def melee_phase_algo1(attacker, defender):
         #get wounds on defender since death in guarantee
     '''
 
-  
+#automated dice but both players actions are chosen by users
 def melee_phase_user_picks(attacker, defender):
 
     def zero_dice():
@@ -844,7 +862,7 @@ def melee_phase_user_picks(attacker, defender):
             zero_dice()
         retotal_dice()
         print_update_text()
-        
+    
     tally_leftover()
     print_update_text()        
 
@@ -873,7 +891,7 @@ def melee_phase_user_picks(attacker, defender):
         #get wounds on defender since death in guarantee
     '''
               
-
+#Run trials on ranged attack
 def prob_ranged_death(attacker, defender, trials = 10000):
     if trials <= 0:
         print("invalid trials number")
@@ -902,7 +920,7 @@ def prob_ranged_death(attacker, defender, trials = 10000):
 
 
 
-
+#character stats
 guardsmen1 = {'M':6 , 'APL':2, 'GA':2, 'BA':4, 'WA':3, 'BS':4, 'WS':4, 'BD':2, 'BCD':3, 'WD':2, 'WCD':3, 'DF':3, 'SV':5, 'W':7}
 kommando = {'M':6 , 'APL':2, 'GA':1, 'BA':5, 'WA':3, 'BS':4, 'WS':3, 'BD':3, 'BCD':4, 'WD':3, 'WCD':4, 'DF':3, 'SV':5, 'W':10}
 
@@ -910,6 +928,262 @@ kommando = {'M':6 , 'APL':2, 'GA':1, 'BA':5, 'WA':3, 'BS':4, 'WS':3, 'BD':3, 'BC
 
 #melee_phase_user_picks(kommando, guardsmen1)
 
+
+status_parse, damage_parse, turn_order_parse = melee_phase_all_outcomes(kommando, guardsmen1)
+print('****')
+print(status_parse)
+print()
+print(damage_parse)
+print()
+print(len(turn_order_parse))
+print(turn_order_parse)
+'''
+    Odd Attacker Even Defeneder except 1 is both because ran out of digits
+
+    9,8 Crit Parry
+    7,6 Pary
+    5,4 Crit Strike
+    3,2 Strike
+    1,0 Crit Parry Normal Hit
+    -1 Filler
+    -2 No Action
+'''
+
+
+print()
+turn_order = []
+total_outcomes = len(turn_order_parse)
+crit_parry_outcomes = []
+crit_parry_normal_hit_outcomes = []
+parry_outcomes = []
+crit_attack_outcomes = []
+attack_outcomes = []
+round_offset = 6
+res = []
+
+print('Start')
+while (status_parse['ah'] > 0 or status_parse['ac'] > 1 or status_parse['dh'] > 0 or status_parse['dc'] > 0):
+
+    print()
+    print('Attacker\'s Turn Round:',(round_offset-5))
+    print(turn_order)
+    print()
+    if status_parse['ah'] > 0 or status_parse['ac'] > 1:
+        total_outcomes = len(turn_order_parse)
+        for n in range(total_outcomes):
+            if turn_order_parse[n][round_offset] == 9:
+                crit_parry_outcomes.append((turn_order_parse[n][2],turn_order_parse[n][5]))
+            elif turn_order_parse[n][round_offset] == 7:
+                parry_outcomes.append((turn_order_parse[n][2],turn_order_parse[n][5]))
+            elif turn_order_parse[n][round_offset] == 5:
+                crit_attack_outcomes.append((turn_order_parse[n][2],turn_order_parse[n][5]))
+            elif turn_order_parse[n][round_offset] == 3:
+                attack_outcomes.append((turn_order_parse[n][2],turn_order_parse[n][5]))
+            elif turn_order_parse[n][round_offset] == 1:
+                crit_parry_normal_hit_outcomes.append((turn_order_parse[n][2],turn_order_parse[n][5]))
+        
+        if len(crit_parry_outcomes) > 0:
+            print("Crit Parry Options")
+            res = []
+            for i in crit_parry_outcomes:
+                if i not in res:
+                    res.append(i)
+            print(str(res))
+            res.clear()
+            crit_attack_outcomes.clear()
+        
+        if len(crit_parry_normal_hit_outcomes) > 0:
+            print("Crit Parry Normal Hit Options")
+            res = []
+            for i in crit_parry_normal_hit_outcomes:
+                if i not in res:
+                    res.append(i)
+            print(str(res))
+            res.clear()
+            crit_parry_normal_hit_outcomes.clear()
+  
+        if len(parry_outcomes) > 0:
+            print("Parry Hit Options")
+            res = []
+            for i in parry_outcomes:
+                if i not in res:
+                    res.append(i)
+            print(str(res))
+            res.clear()
+            parry_outcomes.clear()
+    
+        if len(crit_attack_outcomes) > 0:
+            print("Crit Attack Options")
+            res = []
+            for i in crit_attack_outcomes:
+                if i not in res:
+                    res.append(i)
+            print(str(res))
+            res.clear()
+            crit_attack_outcomes.clear()
+       
+        if len(attack_outcomes) > 0:
+            print("Attack Options")
+            res = []
+            for i in attack_outcomes:
+                if i not in res:
+                    res.append(i)
+            print(str(res))
+            res.clear()
+            attack_outcomes.clear()
+        
+
+        user_choice = input()
+
+        if user_choice == 'cp':
+            status_parse['ac'] -= 1
+            status_parse['dc'] -= 1
+            turn_order.append(9)
+        elif user_choice == 'cpn':
+            status_parse['ac'] -= 1
+            status_parse['dh'] -= 1
+            turn_order.append(1)
+        elif user_choice == 'p':
+            status_parse['ah'] -= 1
+            status_parse['dh'] -= 1
+            turn_order.append(7)
+        elif user_choice == 'ca':
+            status_parse['ac'] -= 1
+            turn_order.append(5)
+        elif user_choice == 'a':
+            status_parse['ah'] -= 1
+            turn_order.append(3)
+        else:
+            turn_order.append(-2)
+                    
+    else:
+        print('No Dice Left')
+        turn_order.append(-2)
+
+    list_offset = 0
+    for n in range(total_outcomes):
+        if turn_order_parse[n - list_offset][round_offset] != turn_order[round_offset-6]:
+            del turn_order_parse[n - list_offset]
+            list_offset += 1
+    
+
+    round_offset += 1
+
+    
+    print()
+    print('Defender\'s Turn Round:',(round_offset-5))
+    print(turn_order)
+
+    print()
+    if status_parse['dh'] > 0 or status_parse['dc'] > 1:
+        total_outcomes = len(turn_order_parse)
+        for n in range(total_outcomes):
+            if turn_order_parse[n][round_offset] == 8:
+                crit_parry_outcomes.append((turn_order_parse[n][2],turn_order_parse[n][5]))
+            elif turn_order_parse[n][round_offset] == 6:
+                parry_outcomes.append((turn_order_parse[n][2],turn_order_parse[n][5]))
+            elif turn_order_parse[n][round_offset] == 4:
+                crit_attack_outcomes.append((turn_order_parse[n][2],turn_order_parse[n][5]))
+            elif turn_order_parse[n][round_offset] == 2:
+                attack_outcomes.append((turn_order_parse[n][2],turn_order_parse[n][5]))
+            elif turn_order_parse[n][round_offset] == 0:
+                crit_parry_normal_hit_outcomes.append((turn_order_parse[n][2],turn_order_parse[n][5]))
+        
+        if len(crit_parry_outcomes) > 0:
+            print("Crit Parry Options")
+            res = []
+            for i in crit_parry_outcomes:
+                if i not in res:
+                    res.append(i)
+            print(str(res))
+            res.clear()
+            crit_attack_outcomes.clear()
+        if len(crit_parry_normal_hit_outcomes) > 0:
+            print("Crit Parry Normal Hit Options")
+            res = []
+            for i in crit_parry_normal_hit_outcomes:
+                if i not in res:
+                    res.append(i)
+            print(str(res))
+            res.clear()
+            crit_parry_normal_hit_outcomes.clear()
+        if len(parry_outcomes) > 0:
+            print("Parry Hit Options")
+            res = []
+            for i in parry_outcomes:
+                if i not in res:
+                    res.append(i)
+            print(str(res))
+            res.clear()
+            parry_outcomes.clear()
+        if len(crit_attack_outcomes) > 0:
+            print("Crit Attack Options")
+            res = []
+            for i in crit_attack_outcomes:
+                if i not in res:
+                    res.append(i)
+            print(str(res))
+            res.clear()
+            crit_attack_outcomes.clear()
+        if len(attack_outcomes) > 0:
+            print("Attack Options")
+            res = []
+            for i in attack_outcomes:
+                if i not in res:
+                    res.append(i)
+            print(str(res))
+            res.clear()
+            attack_outcomes.clear()
+
+
+        user_choice = input()
+
+        if user_choice == 'cp':
+            status_parse['dc'] -= 1
+            status_parse['ac'] -= 1
+            turn_order.append(8)
+        elif user_choice == 'cpn':
+            status_parse['dc'] -= 1
+            status_parse['ah'] -= 1
+            turn_order.append(0)
+        elif user_choice == 'p':
+            status_parse['dh'] -= 1
+            status_parse['ah'] -= 1
+            turn_order.append(6)
+        elif user_choice == 'ca':
+            status_parse['dc'] -= 1
+            turn_order.append(4)
+        elif user_choice == 'a':
+            status_parse['dh'] -= 1
+            turn_order.append(2)
+        else:
+            turn_order.append(-2)
+                    
+    else:
+        print('No Dice Left')
+        turn_order.append(-2)
+
+    list_offset = 0
+    for n in range(total_outcomes):
+        if turn_order_parse[n - list_offset][round_offset] != turn_order[round_offset-6]:
+            del turn_order_parse[n - list_offset]
+            list_offset += 1
+    
+    
+    round_offset += 1
+
+
+
+    
+print(status_parse)
+
+
+
+
+
+
+
+'''
 outcome_tally = {}
 entry = ''
 for x in range(1000):
@@ -923,9 +1197,14 @@ for x in range(1000):
             outcome_tally[entry] = 1
 
 
-#print(outcome_tally)
 
 
+print(outcome_tally)
+'''
+
+
+
+'''
 #data = dict(sorted(outcome_tally.items()))
 data = outcome_tally
 
@@ -942,6 +1221,7 @@ fig, ax = plt.subplots()
 ax.bar(x, y, width=1, edgecolor="white", linewidth=3)
 
 plt.show()
+'''
 
 
 
